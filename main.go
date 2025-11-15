@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github/adamjames870/gator/internal/config"
 	"os"
 )
 
 func main() {
-	config := ReadConfig()
+	config := config.Read()
 	state := state{config: &config}
 	commands := getNewCommands()
 	commands.register("login", handlerLogin)
@@ -25,9 +26,4 @@ func main() {
 		os.Exit(1)
 	}
 
-	// fmt.Println(config.Db_url)
-	// config.Current_user_name = "Adam"
-	// WriteConfig(config)
-	// newConfig := ReadConfig()
-	// fmt.Println(newConfig.Current_user_name)
 }

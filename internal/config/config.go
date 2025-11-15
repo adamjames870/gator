@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"encoding/json"
@@ -12,17 +12,13 @@ type Config struct {
 	Current_user_name string `json:"current_user_name"`
 }
 
-type state struct {
-	config *Config
-}
-
 func getGatorConfigFilePath() string {
 	const fileName string = ".gatorconfig.json"
 	homeDir, _ := os.UserHomeDir()
 	return filepath.Join(homeDir, fileName)
 }
 
-func ReadConfig() Config {
+func Read() Config {
 	fileToRead := getGatorConfigFilePath()
 	var config Config
 
@@ -43,7 +39,7 @@ func ReadConfig() Config {
 
 }
 
-func WriteConfig(config Config) {
+func Write(config Config) {
 	file, err := os.Create(getGatorConfigFilePath())
 	if err != nil {
 		fmt.Printf("Error creating file: %v\n", err)
@@ -57,10 +53,11 @@ func WriteConfig(config Config) {
 		fmt.Printf("Error encoding JSON: %v\n", err)
 		return
 	}
+	fmt.Println("Saved config file")
 }
 
-func SetUser(s *state, usr string) error {
-	s.config.Current_user_name = usr
-	WriteConfig(*s.config)
+func SetUser(c Config, usr string) error {
+	c.Current_user_name = usr
+	Write(c)
 	return nil
 }
