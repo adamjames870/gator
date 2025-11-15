@@ -19,7 +19,7 @@ type state struct {
 func getGatorConfigFilePath() string {
 	const fileName string = ".gatorconfig.json"
 	homeDir, _ := os.UserHomeDir()
-	return filepath.Join(homeDir, "gator", fileName)
+	return filepath.Join(homeDir, fileName)
 }
 
 func ReadConfig() Config {
@@ -57,4 +57,10 @@ func WriteConfig(config Config) {
 		fmt.Printf("Error encoding JSON: %v\n", err)
 		return
 	}
+}
+
+func SetUser(s *state, usr string) error {
+	s.config.Current_user_name = usr
+	WriteConfig(*s.config)
+	return nil
 }

@@ -1,25 +1,33 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"os"
 )
 
 func main() {
 	config := ReadConfig()
-	fmt.Println(config.Db_url)
-	config.Current_user_name = "Adam"
-	WriteConfig(config)
-	newConfig := ReadConfig()
-	fmt.Println(newConfig.Current_user_name)
-}
+	state := state{config: &config}
+	commands := getNewCommands()
+	commands.register("login", handlerLogin)
 
-func handlerLogin(s *state, cmd command) error {
-	if len(cmd.args) == 0 {
-		// Empty or nil arguments, login expects a login name
-		return errors.New("no login name provided")
+	args := os.Args
+	if len(args) < 2 {
+		fmt.Println("Too few arguments entered")
+		os.Exit(1)
 	}
-	s.config.Current_user_name = cmd.args[0]
-	fmt.Printf("Set username to '%s'\n", s.config.Current_user_name)
-	return nil
+
+	cmd := command{name: args[1], args: args[2:]}
+
+	err := commands.run(&state, cmd)
+	if err != nil {
+		fmt.Printf("Command failed: %s\n", err)
+		os.Exit(1)
+	}
+
+	// fmt.Println(config.Db_url)
+	// config.Current_user_name = "Adam"
+	// WriteConfig(config)
+	// newConfig := ReadConfig()
+	// fmt.Println(newConfig.Current_user_name)
 }
