@@ -4,7 +4,7 @@ CREATE TABLE users (
     id UUID PRIMARY KEY,
     created_at TIMESTAMP NOT NULL, 
     updated_at TIMESTAMP NOT NULL,
-    name varchar UNIQUE NOT NULL
+    user_name varchar UNIQUE NOT NULL
 );
 
 -- +goose Down

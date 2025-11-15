@@ -13,6 +13,14 @@ type commands struct {
 	cmd_names map[string]func(*state, command) error
 }
 
+func (cmds commands) registerCommands() commands {
+	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
+	cmds.register("reset", handlerReset)
+	cmds.register("users", handlerUsers)
+	return cmds
+}
+
 func getNewCommands() commands {
 	cmdMap := make(map[string]func(*state, command) error)
 	return commands{cmd_names: cmdMap}
