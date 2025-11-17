@@ -11,7 +11,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, usr database.User) error {
 	if len(cmd.args) < 2 {
 		// two arguments required - name and url
 		return errors.New("need two args - name and feed")
@@ -27,20 +27,13 @@ func handlerAddFeed(s *state, cmd command) error {
 
 	ctx := GetContext()
 
-	currentUser := s.config.Current_user_name
-	currentUserId, idErr := s.db.GetUserIdFromName(ctx, currentUser)
-
-	if idErr != nil {
-		return errors.New("failed to load user id")
-	}
-
 	newFeed := database.CreateFeedParams{
 		ID:            uuid.New(),
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		FeedName:      feedName,
 		FeedUrl:       feedUrl,
-		CreatedByUser: currentUserId,
+		CreatedByUser: usr.ID,
 	}
 
 	fd, errCreateFeed := s.db.CreateFeed(ctx, newFeed)
@@ -51,7 +44,7 @@ func handlerAddFeed(s *state, cmd command) error {
 
 	tw := table.NewWriter()
 	tw.AppendHeader(table.Row{"ID", "Created At", "Feed Name", "Feed URL", "Creating User"})
-	tw.AppendRow(table.Row{fd.ID, fd.CreatedAt.Format("01-Jan 15:06"), fd.FeedName, fd.FeedUrl, currentUser})
+	tw.AppendRow(table.Row{fd.ID, fd.CreatedAt.Format("01-Jan 15:06"), fd.FeedName, fd.FeedUrl, usr.UserName})
 
 	fmt.Printf("%s\n", tw.Render())
 
@@ -59,7 +52,7 @@ func handlerAddFeed(s *state, cmd command) error {
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-		UserID:    currentUserId,
+		UserID:    usr.ID,
 		FeedID:    fd.ID,
 	}
 
