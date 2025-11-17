@@ -14,6 +14,11 @@ func handlerUsers(s *state, cmd command) error {
 
 	currentUser := s.config.Current_user_name
 
+	if len(users) == 0 {
+		fmt.Println("No users in database")
+		return nil
+	}
+
 	for _, usr := range users {
 		line := fmt.Sprintf("* %s", usr.UserName)
 		if usr.UserName == currentUser {

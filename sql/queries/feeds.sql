@@ -1,5 +1,5 @@
 -- name: CreateFeed :one
-INSERT INTO feeds (id, created_at, updated_at, feed_name, feed_url, user_id)
+INSERT INTO feeds (id, created_at, updated_at, feed_name, feed_url, created_by_user)
 VALUES (
     $1,
     $2,
@@ -11,6 +11,13 @@ VALUES (
 RETURNING *;
 
 -- name: GetFeedList :many
-SELECT feeds.feed_name, feeds.feed_url, users.user_name
+SELECT feeds.feed_name, feeds.feed_url, created_by_user
 FROM feeds
-INNER JOIN users on feeds.user_id = users.id;
+;
+
+-- name: GetFeedByUrl :one
+
+SELECT id, feed_name 
+FROM feeds
+WHERE feed_url = $1
+;

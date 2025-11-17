@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 func handlerAddFeed(s *state, cmd command) error {
@@ -34,21 +35,42 @@ func handlerAddFeed(s *state, cmd command) error {
 	}
 
 	newFeed := database.CreateFeedParams{
+		ID:            uuid.New(),
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+		FeedName:      feedName,
+		FeedUrl:       feedUrl,
+		CreatedByUser: currentUserId,
+	}
+
+	fd, errCreateFeed := s.db.CreateFeed(ctx, newFeed)
+
+	if errCreateFeed != nil {
+		return errors.New("failed to save feed to DB: " + errCreateFeed.Error())
+	}
+
+	tw := table.NewWriter()
+	tw.AppendHeader(table.Row{"ID", "Created At", "Feed Name", "Feed URL", "Creating User"})
+	tw.AppendRow(table.Row{fd.ID, fd.CreatedAt.Format("01-Jan 15:06"), fd.FeedName, fd.FeedUrl, currentUser})
+
+	fmt.Printf("%s\n", tw.Render())
+
+	newFollow := database.CreateFeedFollowParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-		FeedName:  feedName,
-		FeedUrl:   feedUrl,
 		UserID:    currentUserId,
+		FeedID:    fd.ID,
 	}
 
-	fd, fdErr := s.db.CreateFeed(ctx, newFeed)
+	createdFollow, errCreateFollow := s.db.CreateFeedFollow(ctx, newFollow)
 
-	if fdErr != nil {
-		return errors.New("failed to save feed to DB")
+	if errCreateFollow != nil {
+		return errors.New("failed to create feed_follow: " + errCreateFollow.Error())
 	}
 
-	fmt.Println(fd)
+	fmt.Printf("Subscribed user %s to feed %s\n", createdFollow.UserName, createdFollow.FeedName)
+
 	return nil
 
 }

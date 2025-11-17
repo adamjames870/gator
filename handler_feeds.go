@@ -10,14 +10,14 @@ import (
 func handlerFeeds(s *state, cmd command) error {
 	feeds, err := s.db.GetFeedList(GetContext())
 	if err != nil {
-		return errors.New("could not load feds: " + err.Error())
+		return errors.New("could not load feeds: " + err.Error())
 	}
 
 	tw := table.NewWriter()
-	tw.AppendHeader(table.Row{"Name", "URL", "User"})
+	tw.AppendHeader(table.Row{"Name", "URL", "Creating User"})
 
 	for _, row := range feeds {
-		tw.AppendRow(table.Row{row.FeedName, row.FeedUrl, row.UserName})
+		tw.AppendRow(table.Row{row.FeedName, row.FeedUrl, row.CreatedByUser})
 	}
 	fmt.Printf("%s\n", tw.Render())
 	return nil

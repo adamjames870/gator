@@ -13,7 +13,7 @@ import (
 )
 
 const createFeed = `-- name: CreateFeed :one
-INSERT INTO feeds (id, created_at, updated_at, feed_name, feed_url, user_id)
+INSERT INTO feeds (id, created_at, updated_at, feed_name, feed_url, created_by_user)
 VALUES (
     $1,
     $2,
@@ -22,16 +22,16 @@ VALUES (
     $5,
     $6
 )
-RETURNING id, created_at, updated_at, feed_name, feed_url, user_id
+RETURNING id, created_at, updated_at, feed_name, feed_url, created_by_user
 `
 
 type CreateFeedParams struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	FeedName  string
-	FeedUrl   string
-	UserID    uuid.UUID
+	ID            uuid.UUID
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	FeedName      string
+	FeedUrl       string
+	CreatedByUser uuid.UUID
 }
 
 func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error) {
@@ -41,7 +41,7 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		arg.UpdatedAt,
 		arg.FeedName,
 		arg.FeedUrl,
-		arg.UserID,
+		arg.CreatedByUser,
 	)
 	var i Feed
 	err := row.Scan(
@@ -50,21 +50,39 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		&i.UpdatedAt,
 		&i.FeedName,
 		&i.FeedUrl,
-		&i.UserID,
+		&i.CreatedByUser,
 	)
 	return i, err
 }
 
-const getFeedList = `-- name: GetFeedList :many
-SELECT feeds.feed_name, feeds.feed_url, users.user_name
+const getFeedByUrl = `-- name: GetFeedByUrl :one
+
+SELECT id, feed_name 
 FROM feeds
-INNER JOIN users on feeds.user_id = users.id
+WHERE feed_url = $1
+`
+
+type GetFeedByUrlRow struct {
+	ID       uuid.UUID
+	FeedName string
+}
+
+func (q *Queries) GetFeedByUrl(ctx context.Context, feedUrl string) (GetFeedByUrlRow, error) {
+	row := q.db.QueryRowContext(ctx, getFeedByUrl, feedUrl)
+	var i GetFeedByUrlRow
+	err := row.Scan(&i.ID, &i.FeedName)
+	return i, err
+}
+
+const getFeedList = `-- name: GetFeedList :many
+SELECT feeds.feed_name, feeds.feed_url, created_by_user
+FROM feeds
 `
 
 type GetFeedListRow struct {
-	FeedName string
-	FeedUrl  string
-	UserName string
+	FeedName      string
+	FeedUrl       string
+	CreatedByUser uuid.UUID
 }
 
 func (q *Queries) GetFeedList(ctx context.Context) ([]GetFeedListRow, error) {
@@ -76,7 +94,7 @@ func (q *Queries) GetFeedList(ctx context.Context) ([]GetFeedListRow, error) {
 	var items []GetFeedListRow
 	for rows.Next() {
 		var i GetFeedListRow
-		if err := rows.Scan(&i.FeedName, &i.FeedUrl, &i.UserName); err != nil {
+		if err := rows.Scan(&i.FeedName, &i.FeedUrl, &i.CreatedByUser); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

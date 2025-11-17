@@ -6,8 +6,8 @@ CREATE TABLE feeds (
     updated_at TIMESTAMP NOT NULL,
     feed_name varchar NOT NULL,
     feed_url varchar UNIQUE NOT NULL,
-    user_id UUID NOT NULL,
-    CONSTRAINT fk_users FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    created_by_user UUID NOT NULL,
+    CONSTRAINT fk_user FOREIGN KEY (created_by_user) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- +goose Down

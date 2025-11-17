@@ -53,7 +53,7 @@ func Write(config Config) {
 		fmt.Printf("Error encoding JSON: %v\n", err)
 		return
 	}
-	fmt.Println("Saved config file")
+	fmt.Println("Saved config file to reflect current user: " + config.Current_user_name)
 }
 
 func SetUser(c Config, usr string) error {

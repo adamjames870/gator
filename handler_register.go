@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 func handlerRegister(s *state, cmd command) error {
@@ -37,7 +38,11 @@ func handlerRegister(s *state, cmd command) error {
 		return errors.New("failed to create user: " + create_err.Error())
 	}
 
-	fmt.Println(usr)
+	tw := table.NewWriter()
+	tw.AppendHeader(table.Row{"ID", "Created At", "Username"})
+	tw.AppendRow(table.Row{usr.ID, newUser.CreatedAt.Format("01-Jan 15:06"), usr.UserName})
+
+	fmt.Printf("%s\n", tw.Render())
 	config.SetUser(*s.config, usr.UserName)
 	return nil
 
