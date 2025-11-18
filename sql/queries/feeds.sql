@@ -21,3 +21,15 @@ SELECT id, feed_name
 FROM feeds
 WHERE feed_url = $1
 ;
+
+-- name: MarkFeedFetched :one
+UPDATE feeds
+SET updated_at = $2, last_fetched_at = $2
+WHERE id = $1
+RETURNING *;
+
+-- name: GetNextFeedToFecth :one
+SELECT id, feed_name, feed_url 
+FROM feeds
+ORDER BY last_fetched_at ASC NULLS FIRST
+LIMIT 1;

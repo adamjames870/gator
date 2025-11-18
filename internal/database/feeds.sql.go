@@ -22,7 +22,7 @@ VALUES (
     $5,
     $6
 )
-RETURNING id, created_at, updated_at, feed_name, feed_url, created_by_user
+RETURNING id, created_at, updated_at, feed_name, feed_url, created_by_user, last_fetched_at
 `
 
 type CreateFeedParams struct {
@@ -51,6 +51,7 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		&i.FeedName,
 		&i.FeedUrl,
 		&i.CreatedByUser,
+		&i.LastFetchedAt,
 	)
 	return i, err
 }
@@ -106,4 +107,51 @@ func (q *Queries) GetFeedList(ctx context.Context) ([]GetFeedListRow, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getNextFeedToFecth = `-- name: GetNextFeedToFecth :one
+SELECT id, feed_name, feed_url 
+FROM feeds
+ORDER BY last_fetched_at ASC NULLS FIRST
+LIMIT 1
+`
+
+type GetNextFeedToFecthRow struct {
+	ID       uuid.UUID
+	FeedName string
+	FeedUrl  string
+}
+
+func (q *Queries) GetNextFeedToFecth(ctx context.Context) (GetNextFeedToFecthRow, error) {
+	row := q.db.QueryRowContext(ctx, getNextFeedToFecth)
+	var i GetNextFeedToFecthRow
+	err := row.Scan(&i.ID, &i.FeedName, &i.FeedUrl)
+	return i, err
+}
+
+const markFeedFetched = `-- name: MarkFeedFetched :one
+UPDATE feeds
+SET updated_at = $2, last_fetched_at = $2
+WHERE id = $1
+RETURNING id, created_at, updated_at, feed_name, feed_url, created_by_user, last_fetched_at
+`
+
+type MarkFeedFetchedParams struct {
+	ID        uuid.UUID
+	UpdatedAt time.Time
+}
+
+func (q *Queries) MarkFeedFetched(ctx context.Context, arg MarkFeedFetchedParams) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, markFeedFetched, arg.ID, arg.UpdatedAt)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.FeedName,
+		&i.FeedUrl,
+		&i.CreatedByUser,
+		&i.LastFetchedAt,
+	)
+	return i, err
 }
