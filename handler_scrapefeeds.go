@@ -1,16 +1,20 @@
 package main
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"github/adamjames870/gator/internal/database"
 	"github/adamjames870/gator/internal/rss"
+	"strings"
 	"time"
 
-	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/araddon/dateparse"
+	"github.com/google/uuid"
 )
 
 func handlerScrapeFeeds(s *state, cmd command) error {
+
 	ctx := GetContext()
 	feedToFetch, errUrl := s.db.GetNextFeedToFecth(ctx)
 	if errUrl != nil {
@@ -25,17 +29,44 @@ func handlerScrapeFeeds(s *state, cmd command) error {
 		ID:        feedToFetch.ID,
 		UpdatedAt: time.Now(),
 	}
-	updatedFetch, errUpdatedFetch := s.db.MarkFeedFetched(ctx, feedUpdate)
+	_, errUpdatedFetch := s.db.MarkFeedFetched(ctx, feedUpdate)
 	if errUpdatedFetch != nil {
 		return errors.New("failed to mark feed updated: " + errUpdatedFetch.Error())
 	}
 
-	fmt.Printf("Items from %s(%s) | Marked updated at %s\n", data.Channel.Title, data.Channel.Description, updatedFetch.LastFetchedAt.Time.Format("15:04"))
-	tw := table.NewWriter()
-	tw.AppendHeader(table.Row{"Title"})
 	for _, item := range data.Channel.Item {
-		tw.AppendRow(table.Row{item.Title})
+
+		dt, errDt := dateparse.ParseAny(item.PubDate)
+
+		if errDt != nil {
+			fmt.Printf("Could not parse datetime %s with error: %s. Post will not be saved.\n", item.PubDate, errDt.Error())
+			continue
+		}
+
+		new_post := database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: sql.NullString{String: item.Description, Valid: item.Description != ""},
+			PublishedAt: dt,
+			FeedID:      feedUpdate.ID,
+		}
+
+		post, errPost := s.db.CreatePost(ctx, new_post)
+		if errPost != nil {
+			if strings.Contains(errPost.Error(), "violates unique constraint \"posts_url_key\"") {
+				fmt.Printf("Not saving post (already saved in database)\nPost: %s\nFrom feed: %s\n", new_post.Title, data.Channel.Title)
+			} else {
+				fmt.Printf("Failed to save post: %s\n", errPost.Error())
+			}
+		} else {
+			fmt.Printf("Saved post to database\nPost: %s\nFrom feed: %s\n", post.Title, data.Channel.Title)
+		}
+		fmt.Println("--------------------------------------------------------")
+
 	}
-	fmt.Printf("%s\n", tw.Render())
+
 	return nil
 }

@@ -25,6 +25,7 @@ func (cmds commands) registerCommands() commands {
 	cmds.register("following", middlewareLoggedIn(handlerFollowing))
 	cmds.register("unfollow", middlewareLoggedIn(handlerUnfollow))
 	cmds.register("scrape", handlerScrapeFeeds)
+	cmds.register("browse", middlewareLoggedIn(handlerBrowse))
 	return cmds
 }
 
